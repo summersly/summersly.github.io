@@ -1,14 +1,539 @@
 ---
 layout: post
-title:  "Hello, Jekyll"
+title:  "其他内容"
 date:   2019-05-23 21:03:36 +0530
+description: An example post which shows code rendering.
+categories: Other
 ---
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+## 其他
 
-![texture theme preview](https://images.unsplash.com/photo-1500322969630-a26ab6eb64cc?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&w=1000&q=80)
+### 小组服务器配置
 
-Check out the [Jekyll docs][jekyll-docs] for more info on how to get the most out of Jekyll. File all bugs/feature requests at [Jekyll’s GitHub repo][jekyll-gh]. If you have questions, you can ask them on [Jekyll Talk][jekyll-talk].
+Web容器：Tomcat
 
-[jekyll-docs]: https://jekyllrb.com/docs/home
-[jekyll-gh]:   https://github.com/jekyll/jekyll
-[jekyll-talk]: https://talk.jekyllrb.com/
+静态服务：Nginx
+
+daemon：npm
+
+Scp: secure copy 机器间文件传输
+
+```bash
+scp localfile remotehost:file
+```
+
+tar.gz压缩包解压到目标文件夹
+
+```
+tar -zxvf xxx.tar.gz -C /usr/local/java
+```
+
+
+
+
+
+#### 脚本启动和关闭的案例
+
+1.启动脚本
+
+```
+#!/bin/sh
+
+## jenkins自动配置开发环境的脚本
+## 停止先前的进程
+pid=`ps -ef | grep zjucdms_dev.jar | grep -v grep | awk '{print $2}'`
+if [ -n "$pid" ]
+then
+   kill -9 $pid
+fi
+
+## 将生成的jar包转移
+rm -f /www/zju_cdms_dev/zjucdms_dev.jar
+cp /var/lib/jenkins/workspace/biomedit_cdms_dev/boot/target/zjucdms.jar /www/zju_cdms_dev/zjucdms_dev.jar
+# chmod 777 /www/zju_cdms_dev/zjucdms_dev.jar
+
+## nohup进程守护启动
+nohup java -jar -Dspring.profiles.active=dev /www/zju_cdms_dev/zjucdms_dev.jar --server.port=8082 > /www/zju_cdms_dev/zjucdms_dev.log 2>start.log&
+```
+
+
+
+```
+nohup java -jar ../webapp/xxx.jar --server.port=9002 >> ../logs/xxx.log  &
+
+tail -f ../logs/xxx.log 
+```
+
+2.关闭脚本
+
+```
+pid=`ps -ef|grep java|grep xxx.jar |awk '{print $2}'`
+
+if [ -z $pid ]; then
+    echo 'app not runing'
+else
+    echo 'kill pid ' $pid
+    kill $pid
+    sleep 5
+    ps -ef|grep java
+fi
+
+
+#!/bin/sh
+rm -f tpid
+nohup java -jar xxx.jar(jar的相对路径或者绝对路径) --spring.profiles.active=stg > /dev/null 2>&1 &
+echo $! > tpid
+
+脚本关闭
+tpid=`cat tpid | awk '{print $1}'`
+tpid=`ps -aef | grep $tpid | awk '{print $2}' |grep $tpid`
+if [ ${tpid} ]; then 
+        kill -9 $tpid
+fi
+
+```
+
+3.最后一步，执行脚本。（cd到脚本目录并执行）
+
+```
+sh xxx.sh
+```
+
+#### 补充
+
+1.命令后加&符号，可以使命令在后台执行。 
+
+2.tail -f 实时查看日志文件。 
+
+3.如果要先关闭项目再启动，尽量不要使用Ctrl+z退出命令行窗口的当前状态，最好新开一个命令行窗口，然后执行关闭脚本，再执行启动脚本。这样操作，可以避免应用莫名其妙没有关闭到的情况，反复执行关闭脚本却没有杀死应用进程的奇怪问题，需要杀多次。
+
+
+作者：Hans在路上
+链接：https://juejin.im/post/5d52620f5188257d1151eb77
+来源：掘金
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+
+### Nginx
+
+端口：80
+https: 443
+
+#### 静态文件服务
+
+alias opendoc/ = /www/ZjuBioCDdoc/opendoc
+
+#### nginx自动监听功能
+
+/root/nginx_listen.sh脚本
+
+crontab 定时计划实现，1小时检测一次nginx服务是否正常运行（进程数不为0），如不正常则restart
+
+##### crontab指令
+
+```
+crontab -e  //编辑定时任务
+crontab -l  //查看定时任务
+```
+
+具体定时任务写法参见 https://blog.csdn.net/u013967628/article/details/83504839
+
+```
+[root@Zjubiomedit ~]# cat nginx_restart.sh 
+# /bin/sh
+
+nginx -s stop
+nginx -c /usr/local/nginx/conf/nginx.conf
+nginx -s reload
+```
+
+```shell
+#nginx.conf
+#user  nobody;
+worker_processes  1;
+
+#error_log  logs/error.log;
+#error_log  logs/error.log  notice;
+#error_log  logs/error.log  info;
+
+#pid        logs/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+    #                  '$status $body_bytes_sent "$http_referer" '
+    #                  '"$http_user_agent" "$http_x_forwarded_for"';
+
+    #access_log  logs/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    #keepalive_timeout  0;
+    keepalive_timeout  65;
+
+    #gzip  on;
+
+    upstream evaluate {
+	server localhost:9010 weight=5;
+    }
+
+    map $http_upgrade $connection_upgrade {
+    	default upgrade;
+    	'' close;
+    }
+
+    upstream prodservice {
+	server localhost:8081;	
+    }
+
+    upstream devservice {
+   	server localhost:8082; 
+    }
+
+    server {
+
+    	listen 443 ssl;
+        server_name zjubiomedit.com;
+
+        ssl_certificate /root/.acme.sh/zjubiomedit.com/fullchain.cer;
+        ssl_certificate_key /root/.acme.sh/zjubiomedit.com/zjubiomedit.com.key;
+	ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE:ECDH:AES:HIGH:!NULL:!aNULL:!MD5:!ADH:!RC4:!DH:!DHE;
+    	ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    	ssl_prefer_server_ciphers on;
+	
+	location /exp {
+	    rewrite ^/exp/(.*)$ /$1 break;
+	    proxy_pass http://localhost:8081;
+	}
+	
+        location /expdev {
+            rewrite ^/expdev/(.*)$ /$1 break;
+            proxy_pass http://localhost:8082;
+        }
+
+	location /copd {
+	    rewrite ^/copd/(.*)$ /$1 break;
+	    proxy_pass http://localhost:8085;
+	}
+
+     	location /msgdev {
+             proxy_pass http://localhost:8082/;
+             proxy_http_version 1.1;
+             proxy_set_header Upgrade $http_upgrade;
+             proxy_set_header Connection "upgrade";
+        }
+
+        location /msg {
+             proxy_pass http://localhost:8081/;
+             proxy_http_version 1.1;
+             proxy_set_header Upgrade $http_upgrade;
+             proxy_set_header Connection "upgrade";
+        }
+
+	location /eduproxy/ {
+		proxy_pass http://edu.zjubiomedit.com/;	
+	}
+
+        location ^~ /opendoc/ {
+            alias /www/ZjuBioCDdocs/opendoc/;
+            index  index.html index.htm;
+       	    auth_basic 'Login';
+	    auth_basic_user_file /usr/local/nginx/doc_password;
+	}
+	
+	location ^~ /survey/ {
+	    alias /www/survey_system/dist/;
+	    index index.html;
+	}
+	
+	location ^~ /eval/ {
+        	proxy_set_header Host $host;
+        	proxy_set_header  X-Real-IP        $remote_addr;
+        	proxy_set_header  X-Forwarded-For  $proxy_add_x_forwarded_for;
+        	proxy_set_header X-NginX-Proxy true;
+		proxy_pass http://evaluate/;
+	}
+
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+
+    }
+    server {
+        listen       80;
+        server_name  exp.zjubiomedit.com;
+	
+	rewrite ^(.*) https://$server_name$1 permanent;
+
+        # proxy the PHP scripts to Apache listening on 127.0.0.1:80
+        #
+        #location ~ \.php$ {
+        #    proxy_pass   http://127.0.0.1;
+        #}
+
+        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+        #
+        #location ~ \.php$ {
+        #    root           html;
+        #    fastcgi_pass   127.0.0.1:9000;
+        #    fastcgi_index  index.php;
+        #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+        #    include        fastcgi_params;
+        #}
+
+        # deny access to .htaccess files, if Apache's document root
+        # concurs with nginx's one
+        #
+        #location ~ /\.ht {
+        #    deny  all;
+        #}
+    }
+
+
+    server {
+	listen 8089;
+	location ^~ /opendoc/ {
+            alias /www/ZjuBioCDdocs/opendoc/;
+            index  index.html index.htm;
+	}
+    }
+    # another virtual host using mix of IP-, name-, and port-based configuration
+    #
+    #server {
+    #    listen       8000;
+    #    listen       somename:8080;
+    #    server_name  somename  alias  another.alias;
+
+    #    location / {
+    #        root   html;
+    #        index  index.html index.htm;
+    #    }
+    #}
+
+
+    # HTTPS server
+    #
+    #server {
+    #    listen       443 ssl;
+    #    server_name  localhost;
+
+    #    ssl_certificate      cert.pem;
+    #    ssl_certificate_key  cert.key;
+
+    #    ssl_session_cache    shared:SSL:1m;
+    #    ssl_session_timeout  5m;
+
+    #    ssl_ciphers  HIGH:!aNULL:!MD5;
+    #    ssl_prefer_server_ciphers  on;
+
+    #    location / {
+    #        root   html;
+    #        index  index.html index.htm;
+    #    }
+    #}
+
+}
+
+```
+
+
+
+
+
+### Jenkins
+
+持续集成工具
+
+Jenkins的war包自带Jetty服务器（和tomcat一样也是一个Servlet引擎，应用服务器），剩下的工作在浏览器中进行。
+
+**持续集成CI，continuous integration**：频繁将代码继承到主干，能够快速发现错误，防止分支大幅偏离主干。快速迭代并保持高质量。
+
++ 提交：向远程仓库提交代码，commit；
++ 测试：代码仓库对commit操作配置了钩子hook，只要提交代码或者合并进主干，就要跑自动化测试。至少是单元测试；
++ 构建：交付后，先进性构建（build），在进入第二轮测试。
++ 测试：第二轮是全面测试，单元测试和集成测试都会跑，有条件的话，也要做端对端测试。所有测试以自动化为主，少数无法自动化的测试用例，就要人工跑。
++ 部署：通过第二轮测试，当前代码就是一个可以直接部署的artifact。将这个版本的所有文件打包存档，发到生产服务器。
++ 回滚
+
+
+
+
+
+```bash
+[root@Zjubiomedit www]# cd zju_cdms_dev
+[root@Zjubiomedit zju_cdms_dev]# ls
+deploy.sh  deploy.sh.bak  nohup.out  start.log  zjucdms_dev.jar  zjucdms_dev.log
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Git
+
+> 分布式版本控制系统
+>
+
+这里的“分布式”是相对于“集中式”来说的。把数据集中保存在服务器节点，所有的客户节点都从服务节点获取数据的版本控制系统叫做集中式版本控制系统，比如svn就是典型的集中式版本控制系统。
+
+与之相对，Git的数据不止保存在服务器上，同时也完整的保存在本地计算机上，所以我们称Git为分布式版本控制系统。
+
+**实现git功能的基础是对文件变更过程的存储**
+
+```
+git init
+```
+
+新生成的空git仓库的结构，其中有一个objects文件夹，这就是git数据库的存储位置。
+
+对git数据库的操作正是git系统的核心——git的版本控制功能就是基于它的对象数据库实现的。在git数据库里，存储着纳入git版本管理的所有文件的所有版本的完整镜像。
+
+git数据库能够存的对象类型有：blob、tree、commit
+
+```bash
+// 常用指令
+git init 初始化
+git add <file> 添加某个文件
+git commit -m <message> 提交到暂存区
+git status 查看工作区的状态，哪些文件被修改了
+git diff 查看修改的内容
+
+// 版本回退/前进
+git log 现实从最近到最远的提交日志，以便确定需要回到哪个版本
+git log --pretty=oneline
+git reset --hard HEAD^ 回退上一个版本 两个^^就是上上个版本 HEAD-100就是前100个版本
+git reset --hard <commit id> 回到指定版本（未来的）
+git reflog 查看命令历史，以便确定要回到将来的哪个版本
+
+// 撤销修改
+git checkout -- <file> 撤销file文件在工作区的全部修改，让文件回到最近一次commit或者add的状态
+如果还没放进暂存区（还没add），回到修改前（上一次commit）；已经添加了暂存再修改的（已经add后再修改），回到刚添加暂存的时候（上一次add）。
+git reset HEAD <file> 暂存区撤销（撤销这次add）
+
+// 远程撤销
+git revert HEAD 在我们要撤销的提交记录后面多了一个新提交！这个新提交就把上次的提交覆盖了。revert 之后就可以把你的更改推送到远程仓库与别人分享啦。
+
+// 远程
+git remote add origin <address> 添加远程仓库，代号名字叫origin
+git push -u origin master 第一次推送
+git clone <address> 从仓库克隆到本地
+
+// 分支
+git branch 查看分支
+git branch <name> 创建分支
+git checkout <name> / git switch <name> 切换分支
+git checkout -b <name> / git switch -c <name> 创建+切换分支
+git merge <name> 合并某分支到当前分支
+git branch -d <name> 删除分支 / git branch -D <name> 没有merge过的分支强行删除
+git merge --no-ff -m "merge without fast forward" <branchname>  禁用fast forward
+
+
+// 冲突
+$ git merge feature1
+Auto-merging readme.txt
+CONFLICT (content): Merge conflict in readme.txt
+Automatic merge failed; fix conflicts and then commit the result. 必须手动解决冲突后再提交
+$ git add readme.txt 
+$ git commit -m "conflict fixed"
+
+// 修复bug
+git stash 将进行到一半的工作现场储藏起来
+git checkout master 切回master
+git checkout -b issue-101 创建修bug的分支
+git add <file> 
+git commit -m "fix bug 101"
+git switch master
+git merge --np-ff -m "merge bug fix 101" issue-101 修bug完成
+git switch dev 回到开发分支
+git stash list 查看从前保存的工作现场
+git stash apply / git stash pop 前者恢复现场，但不删除/ 后者恢复并删除
+$ git stash apply stash@{0} 可以恢复指定的stash版本 
+！！这时候dev分支上也有同样的bug
+git cherry-pick <commitid> 复制一个特定的提交到当前分支来，避免重复劳动
+
+// 推送
+git push origin <branchname> 指定需要推送的本地分支
+// 如果从远程仓库clone到本地，默认只能看到本地的master分支
+git checkout -b dev origin/dev 创建远程origin的dev到本地
+
+// 多人协同工作
+git push origin <branchname>
+// 如果我新推送的提交和别人的最新提交有冲突，那么先pull，在本地合并再解决冲突
+git branch --set-upstream-to=origin/dev dev  指定本地dev和远程origin/dev分支的连接
+git pull 这样pull才会成功
+
+// 标签管理
+git checkout master 切换到目标分支上
+git tag <name> 打上标签，默认打到最新一次提交上的
+git tag 查看所有标签
+$ git log --pretty=oneline --abbrev-commit 找到历史提交的commit id
+git tag v0.9 <commit id>
+git tag -a v1.0 -m "version 1.0 released" <commitid> 还可以指定说明文字
+git tag -d v1.0
+git push origin v1.0 推送某个标签到远程
+git push origin --tags 推送所有
+git push origin :refs/tags/v1.0 删除远程的tag
+```
+
+**Rebase 实际上就是取出一系列的提交记录，“复制”它们，然后在另外一个地方逐个的放下去。**
+
+
+
+有个开源项目，Github 项目地址：
+
+https://github.com/pcottle/learnGitBranching
+
+教程网站地址：
+
+https://learngitbranching.js.org
+
+**真的很好用**
+
+
+
+
+
+### Tomcat
+
+在服务器放两个脚本，省去写一堆路径的麻烦！
+
+```
+# /bin/sh
+sh /usr/local/tomcat/apache-tomcat-7.0.94/bin/startup.sh
+```
+
+```
+# /bin/sh
+sh /usr/local/tomcat/apache-tomcat-7.0.94/bin/shutdown.sh
+```
+
+
+ 

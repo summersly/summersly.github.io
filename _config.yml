@@ -16,17 +16,17 @@ sass:
 permalink: /posts/:title/
 texture:
   title: Layee Sheng
-  tagline: Developer. Designer
+  tagline: 好好学习 天天向上
   date_format: "%b %-d, %Y"
   style: black
   showNav: false
-  showPicker: true
+  showPicker: false
 
   # generate social links in footer
   social_links:
-    twitter: thelehhman
-    github:  thelehhman
-    linkedIn: in/thelehhman
+    twitter: 
+    github:  summersly
+    linkedIn: 
     rss: rss
  
 
