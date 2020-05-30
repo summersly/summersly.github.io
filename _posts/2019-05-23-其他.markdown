@@ -5,7 +5,7 @@ date:   2019-05-23 21:03:36 +0530
 description: An example post which shows code rendering.
 categories: Other
 ---
-## 其他
+## Jenkins/Nginx/Tomcat
 
 ### 小组服务器配置
 
